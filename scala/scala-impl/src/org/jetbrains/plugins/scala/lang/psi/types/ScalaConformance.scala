@@ -864,8 +864,9 @@ trait ScalaConformance extends api.Conformance {
           val subst = ScSubstitutor.bind(a.typeParameter.typeParameters, p.typeArguments)
           val upper: ScType =
             subst.subst(a.upper) match {
-              case ParameterizedType(up, _) => ScParameterizedType(up, p.typeArguments)
-              case up => ScParameterizedType(up, p.typeArguments)
+              case simpleBound if simpleBound.isAny => simpleBound // we consider Any to be kind-polymorphic
+              case ParameterizedType(up, _)         => ScParameterizedType(up, p.typeArguments)
+              case up                               => ScParameterizedType(up, p.typeArguments)
             }
           if (!upper.equiv(Any)) {
             result = conformsInner(upper, r, visited, constraints, checkWeak)
@@ -875,8 +876,9 @@ trait ScalaConformance extends api.Conformance {
           if (result.isRight) {
             val lower: ScType =
               subst.subst(a.lower) match {
-                case ParameterizedType(low, _) => ScParameterizedType(low, p.typeArguments)
-                case low => ScParameterizedType(low, p.typeArguments)
+                case simpleBound if simpleBound.isNothing => simpleBound // we consider Nothing to be kind polymorphic
+                case ParameterizedType(low, _)            => ScParameterizedType(low, p.typeArguments)
+                case low                                  => ScParameterizedType(low, p.typeArguments)
               }
             if (!lower.equiv(Nothing)) {
               val t = conformsInner(r, lower, visited, result.constraints, checkWeak)
